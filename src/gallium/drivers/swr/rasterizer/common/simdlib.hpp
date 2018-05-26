@@ -590,7 +590,7 @@ struct SIMDVecHash
 {
     INLINE uint32_t operator()(Integer<SIMD_T> val) const
     {
-#if defined(_WIN64) || !defined(_WIN32) // assume non-Windows is always 64-bit
+#if defined(_WIN64) || defined(__x86_64__)
         static_assert(sizeof(void*) == 8, "This path only meant for 64-bit code");
 
         uint64_t              crc32          = 0;
