@@ -37,7 +37,7 @@ using std::pair;
 using std::make_pair;
 using std::transform;
 using std::copy;
-
+using std::tuple;
 
 TEST_F(LifetimeEvaluatorExactTest, SimpleMoveAdd)
 {
@@ -62,7 +62,7 @@ TEST_F(LifetimeEvaluatorExactTest, SimpleMoveAddMove)
 
 /* Test whether the texoffst are actually visited by the
  * merge algorithm. Note that it is of no importance
- * what instruction is actually used, the MockShader class
+ * what instruction is actually used, the FakeShader class
  * does not consider the details of the operation, only
  * the number of arguments is of importance.
  */
@@ -1210,11 +1210,6 @@ TEST_F(LifetimeEvaluatorExactTest, FirstWriteAtferReadInNestedLoop)
    run (code, temp_lt_expect({{-1,-1}, {0,7}, {1,7}, {4,8}}));
 }
 
-
-#define DST(X, W) vector<pair<int,int>>(1, make_pair(X, W))
-#define SRC(X, S) vector<pair<int, const char *>>(1, make_pair(X, S))
-#define SRC2(X, S, Y, T) vector<pair<int, const char *>>({make_pair(X, S), make_pair(Y, T)})
-
 /* Partial write to components: one component was written unconditionally
  * but another conditionally, temporary must survive the whole loop.
  * Test series for all components.
@@ -1223,13 +1218,13 @@ TEST_F(LifetimeEvaluatorExactTest, LoopWithConditionalComponentWrite_X)
 {
    const vector<FakeCodeline> code = {
       { TGSI_OPCODE_BGNLOOP},
-      {   TGSI_OPCODE_MOV, DST(1, WRITEMASK_Y), SRC(in1, "x"), {}, SWZ()},
-      {   TGSI_OPCODE_IF, {}, SRC(in0, "xxxx"), {}, SWZ()},
-      {     TGSI_OPCODE_MOV, DST(1, WRITEMASK_X), SRC(in1, "y"), {}, SWZ()},
+      {   TGSI_OPCODE_MOV, {MP(1, WRITEMASK_Y)}, {MP(in1, "x")}, {}, SWZ()},
+      {   TGSI_OPCODE_IF, {}, {MP(in0, "xxxx")}, {}, SWZ()},
+      {     TGSI_OPCODE_MOV, {MP(1, WRITEMASK_X)}, {MP(in1, "y")}, {}, SWZ()},
       {   TGSI_OPCODE_ENDIF},
-      {   TGSI_OPCODE_MOV, DST(2, WRITEMASK_XY), SRC(1, "xy"), {}, SWZ()},
+      {   TGSI_OPCODE_MOV, {MP(2, WRITEMASK_XY)}, {MP(1, "xy")}, {}, SWZ()},
       { TGSI_OPCODE_ENDLOOP},
-      { TGSI_OPCODE_MOV, DST(out0, WRITEMASK_XYZW), SRC(2, "xyxy"), {}, SWZ()},
+      { TGSI_OPCODE_MOV, {MP(out0, WRITEMASK_XYZW)}, {MP(2, "xyxy")}, {}, SWZ()},
       { TGSI_OPCODE_END}
    };
    run (code, temp_lt_expect({{-1,-1}, {0,6}, {5,7}}));
@@ -1239,13 +1234,13 @@ TEST_F(LifetimeEvaluatorExactTest, LoopWithConditionalComponentWrite_Y)
 {
    const vector<FakeCodeline> code = {
       { TGSI_OPCODE_BGNLOOP},
-      {   TGSI_OPCODE_MOV, DST(1, WRITEMASK_X), SRC(in1, "x"), {}, SWZ()},
-      {   TGSI_OPCODE_IF, {}, SRC(in0, "xxxx"), {}, SWZ()},
-      {     TGSI_OPCODE_MOV, DST(1, WRITEMASK_Y), SRC(in1, "y"), {}, SWZ()},
+      {   TGSI_OPCODE_MOV, {MP(1, WRITEMASK_X)}, {MP(in1, "x")}, {}, SWZ()},
+      {   TGSI_OPCODE_IF, {}, {MP(in0, "xxxx")}, {}, SWZ()},
+      {     TGSI_OPCODE_MOV, {MP(1, WRITEMASK_Y)}, {MP(in1, "y")}, {}, SWZ()},
       {   TGSI_OPCODE_ENDIF},
-      {   TGSI_OPCODE_MOV, DST(2, WRITEMASK_XY), SRC(1, "xy"), {}, SWZ()},
+      {   TGSI_OPCODE_MOV, {MP(2, WRITEMASK_XY)}, {MP(1, "xy")}, {}, SWZ()},
       { TGSI_OPCODE_ENDLOOP},
-      { TGSI_OPCODE_MOV, DST(out0, WRITEMASK_XYZW), SRC(2, "xyxy"), {}, SWZ()},
+      { TGSI_OPCODE_MOV, {MP(out0, WRITEMASK_XYZW)}, {MP(2, "xyxy")}, {}, SWZ()},
       { TGSI_OPCODE_END}
    };
    run (code, temp_lt_expect({{-1,-1}, {0,6}, {5,7}}));
@@ -1255,13 +1250,13 @@ TEST_F(LifetimeEvaluatorExactTest, LoopWithConditionalComponentWrite_Z)
 {
    const vector<FakeCodeline> code = {
       { TGSI_OPCODE_BGNLOOP},
-      {   TGSI_OPCODE_MOV, DST(1, WRITEMASK_X), SRC(in1, "x"), {}, SWZ()},
-      {   TGSI_OPCODE_IF, {}, SRC(in0, "xxxx"), {}, SWZ()},
-      {     TGSI_OPCODE_MOV, DST(1, WRITEMASK_Z), SRC(in1, "y"), {}, SWZ()},
+      {   TGSI_OPCODE_MOV, {MP(1, WRITEMASK_X)}, {MP(in1, "x")}, {}, SWZ()},
+      {   TGSI_OPCODE_IF, {}, {MP(in0, "xxxx")}, {}, SWZ()},
+      {     TGSI_OPCODE_MOV, {MP(1, WRITEMASK_Z)}, {MP(in1, "y")}, {}, SWZ()},
       {   TGSI_OPCODE_ENDIF},
-      {   TGSI_OPCODE_MOV, DST(2, WRITEMASK_XY), SRC(1, "xz"), {}, SWZ()},
+      {   TGSI_OPCODE_MOV, {MP(2, WRITEMASK_XY)}, {MP(1, "xz")}, {}, SWZ()},
       { TGSI_OPCODE_ENDLOOP},
-      { TGSI_OPCODE_MOV, DST(out0, WRITEMASK_XYZW), SRC(2, "xyxy"), {}, SWZ()},
+      { TGSI_OPCODE_MOV, {MP(out0, WRITEMASK_XYZW)}, {MP(2, "xyxy")}, {}, SWZ()},
       { TGSI_OPCODE_END}
    };
    run (code, temp_lt_expect({{-1,-1}, {0,6}, {5,7}}));
@@ -1271,13 +1266,13 @@ TEST_F(LifetimeEvaluatorExactTest, LoopWithConditionalComponentWrite_W)
 {
    const vector<FakeCodeline> code = {
       { TGSI_OPCODE_BGNLOOP},
-      {   TGSI_OPCODE_MOV, DST(1, WRITEMASK_X), SRC(in1, "x"), {}, SWZ()},
-      {   TGSI_OPCODE_IF, {}, SRC(in0, "xxxx"), {}, SWZ()},
-      {     TGSI_OPCODE_MOV, DST(1, WRITEMASK_W), SRC(in1, "y"), {}, SWZ()},
+      {   TGSI_OPCODE_MOV, {MP(1, WRITEMASK_X)}, {MP(in1, "x")}, {}, SWZ()},
+      {   TGSI_OPCODE_IF, {}, {MP(in0, "xxxx")}, {}, SWZ()},
+      {     TGSI_OPCODE_MOV, {MP(1, WRITEMASK_W)}, {MP(in1, "y")}, {}, SWZ()},
       {   TGSI_OPCODE_ENDIF},
-      {   TGSI_OPCODE_MOV, DST(2, WRITEMASK_XY), SRC(1, "xw"), {}, SWZ()},
+      {   TGSI_OPCODE_MOV, {MP(2, WRITEMASK_XY)}, {MP(1, "xw")}, {}, SWZ()},
       { TGSI_OPCODE_ENDLOOP},
-      { TGSI_OPCODE_MOV, DST(out0, WRITEMASK_XYZW), SRC(2, "xyxy"), {}, SWZ()},
+      { TGSI_OPCODE_MOV, {MP(out0, WRITEMASK_XYZW)}, {MP(2, "xyxy")}, {}, SWZ()},
       { TGSI_OPCODE_END}
    };
    run (code, temp_lt_expect({{-1,-1}, {0,6}, {5,7}}));
@@ -1287,14 +1282,14 @@ TEST_F(LifetimeEvaluatorExactTest, LoopWithConditionalComponentWrite_X_Read_Y_Be
 {
    const vector<FakeCodeline> code = {
       { TGSI_OPCODE_BGNLOOP},
-      {   TGSI_OPCODE_MOV, DST(1, WRITEMASK_X), SRC(in1, "x"), {}, SWZ()},
-      {   TGSI_OPCODE_IF, {}, SRC(in0, "xxxx"), {}, SWZ()},
-      {     TGSI_OPCODE_MOV, DST(2, WRITEMASK_XYZW), SRC(1, "yyyy"), {}, SWZ()},
+      {   TGSI_OPCODE_MOV, {MP(1, WRITEMASK_X)}, {MP(in1, "x")}, {}, SWZ()},
+      {   TGSI_OPCODE_IF, {}, {MP(in0, "xxxx")}, {}, SWZ()},
+      {     TGSI_OPCODE_MOV, {MP(2, WRITEMASK_XYZW)}, {MP(1, "yyyy")}, {}, SWZ()},
       {   TGSI_OPCODE_ENDIF},
-      {   TGSI_OPCODE_MOV, DST(1, WRITEMASK_YZW), SRC(2, "yyzw"), {}, SWZ()},
+      {   TGSI_OPCODE_MOV, {MP(1, WRITEMASK_YZW)}, {MP(2, "yyzw")}, {}, SWZ()},
       { TGSI_OPCODE_ENDLOOP},
-      { TGSI_OPCODE_ADD, DST(out0, WRITEMASK_XYZW),
-                         SRC2(2, "yyzw", 1, "xyxy"), {}, SWZ()},
+      { TGSI_OPCODE_ADD, {MP(out0, WRITEMASK_XYZW)},
+                         {MP(2, "yyzw"), MP(1, "xyxy")}, {}, SWZ()},
       { TGSI_OPCODE_END}
    };
    run (code, temp_lt_expect({{-1,-1}, {0,7}, {0,7}}));
@@ -1592,8 +1587,6 @@ TEST_F(LifetimeEvaluatorExactTest, NestedLoopWithWriteAfterBreak)
    run (code, temp_lt_expect({{-1,-1}, {0,8}}));
 }
 
-
-#define MT(X,Y,Z) std::make_tuple(X,Y,Z)
 /* Check lifetime estimation with a relative addressing in src.
  * Note, since the lifetime estimation always extends the lifetime
  * at to at least one instruction after the last write, for the
