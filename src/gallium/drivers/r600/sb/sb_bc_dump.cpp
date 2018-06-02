@@ -50,7 +50,7 @@ bool bc_dump::visit(cf_node& n, bool enter) {
 		if ((n.bc.op_ptr->flags & CF_ALU) && n.bc.is_alu_extended()) {
 			dump_dw(id, 2);
 			id += 2;
-			sblog << "\n";
+			sblog << "ALU_EXTENDED\n";
 		}
 
 		dump_dw(id, 2);
