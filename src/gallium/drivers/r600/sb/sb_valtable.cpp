@@ -333,9 +333,12 @@ bool value::no_reladdr_conflict_with(value *src)
 }
 
 void ra_constraint::update_values() {
+
 	for (vvec::iterator I = values.begin(), E = values.end(); I != E; ++I) {
-		assert(!(*I)->constraint);
-		(*I)->constraint = this;
+        if ((*I)->constraint != this) {
+            assert(!(*I)->constraint);
+            (*I)->constraint = this;
+        }
 	}
 }
 
