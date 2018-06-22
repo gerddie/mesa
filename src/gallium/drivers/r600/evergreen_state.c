@@ -2418,6 +2418,27 @@ static void evergreen_emit_sampler_states(struct r600_context *rctx,
 		rstate = texinfo->states.states[i];
 		assert(rstate);
 
+		/* For texture arrays the formula select the layer is (floor(z + 0.5))
+		 * The default z-rounding mode doesn't cut it, so we have to override here.
+		 * Set the coordinate interpolation and truncate mode accordingly.
+		 * Adding the 0.5 offset needs to be done in the shader.
+		 * Also  make sure that for 3D textures TRUNCATE_COORD is not set and the 
+		 * z-filter is cleared (which is the default).
+		 */
+		struct r600_pipe_sampler_view	*rview = texinfo->views.views[i];
+		if (rview) {
+			rstate->tex_sampler_words[0] &= C_03C000_Z_FILTER;
+			enum pipe_texture_target target = rview->base.texture->target;
+			if (target == PIPE_TEXTURE_2D_ARRAY ||
+				target == PIPE_TEXTURE_CUBE_ARRAY ||
+				target == PIPE_TEXTURE_1D_ARRAY) {
+				rstate->tex_sampler_words[0] |= S_03C000_Z_FILTER(V_03C000_SQ_TEX_Z_FILTER_POINT);
+				rstate->tex_sampler_words[2] |= S_03C008_TRUNCATE_COORD(1);
+			} else if (target == PIPE_TEXTURE_3D) {
+				rstate->tex_sampler_words[2] &= C_03C008_TRUNCATE_COORD;
+			}
+		}
+
 		radeon_emit(cs, PKT3(PKT3_SET_SAMPLER, 3, 0) | pkt_flags);
 		radeon_emit(cs, (resource_id_base + i) * 3);
 		radeon_emit_array(cs, rstate->tex_sampler_words, 3);
