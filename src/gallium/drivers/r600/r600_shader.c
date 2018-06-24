@@ -881,7 +881,7 @@ static void choose_spill_arrays(struct r600_shader_ctx *ctx, int *regno, unsigne
 	bool *spilled = ctx->spilled_arrays; // assumed calloc:ed
 
 	*scratch_space_needed = 0;
-	while (*regno > 124 && narrays_left) {
+	while (*regno > 105 && narrays_left) {
 		unsigned i;
 		unsigned largest = 0;
 		unsigned largest_index = 0;
@@ -3545,7 +3545,9 @@ static int r600_shader_from_tgsi(struct r600_context *rctx,
 	pipeshader->scratch_space_needed = 0;
 	int regno = ctx.file_offset[TGSI_FILE_TEMPORARY] +
 			ctx.info.file_max[TGSI_FILE_TEMPORARY];
-	if (regno > 124) {
+
+        if (regno > 105) {
+                debug_printf("R600: spill; %d\n", regno);
 		choose_spill_arrays(&ctx, &regno, &pipeshader->scratch_space_needed);
 		shader->indirect_files = ctx.info.indirect_files;
 	}
@@ -3857,6 +3859,7 @@ static int r600_shader_from_tgsi(struct r600_context *rctx,
 			return r;
 	}
 
+        debug_printf("R600: registers reserved  %d\n", ctx.temp_reg);
 	tgsi_parse_init(&ctx.parse, tokens);
 	while (!tgsi_parse_end_of_tokens(&ctx.parse)) {
 		tgsi_parse_token(&ctx.parse);
@@ -4339,8 +4342,31 @@ static void tgsi_dst(struct r600_shader_ctx *ctx,
 
 		if (spilled) {
 			struct r600_bytecode_output cf;
-			int reg = r600_get_temp(ctx);
-			int r;
+                        int reg = 0;
+                        int r;
+                        bool add_pending_output = true;
+
+                        memset(&cf, 0, sizeof(struct r600_bytecode_output));
+                        get_spilled_array_base_and_size(ctx, tgsi_dst->Register.Index,
+                                &cf.array_base, &cf.array_size);
+
+                        if (ctx->bc->n_pending_outputs == 0)
+                           reg = r600_get_temp(ctx);
+                        else {
+                           struct r600_bytecode_output *tmpl = &ctx->bc->pending_outputs[ctx->bc->n_pending_outputs-1];
+
+                           if ((cf.array_base  + idx == tmpl->array_base) ||
+                               (cf.array_base == tmpl->array_base &&
+                                tmpl->index_gpr == ctx->bc->ar_reg &&
+                                tgsi_dst->Register.Indirect)) {
+                               reg = ctx->bc->pending_outputs[0].gpr;
+                               add_pending_output = false;
+                           } else {
+                              debug_printf("R600: have scratch writes but don't like it");
+                              debug_printf("R600:     ");
+                              reg = r600_get_temp(ctx);
+                           }
+                        }
 
 			r600_dst->sel = reg;
 			r600_dst->chan = swizzle;
@@ -4350,42 +4376,39 @@ static void tgsi_dst(struct r600_shader_ctx *ctx,
 			}
 
 			// needs to be added after op using tgsi_dst
-			memset(&cf, 0, sizeof(struct r600_bytecode_output));
-			cf.op = CF_OP_MEM_SCRATCH;
-			cf.elem_size = 3;
-			cf.gpr = reg;
-			cf.type = V_SQ_CF_ALLOC_EXPORT_WORD0_SQ_EXPORT_WRITE;
-			cf.mark = 1;
-			cf.comp_mask = inst->Dst[0].Register.WriteMask;
-			cf.swizzle_x = 0;
-			cf.swizzle_y = 1;
-			cf.swizzle_z = 2;
-			cf.swizzle_w = 3;
-			cf.burst_count = 1;
+                        if (add_pending_output) {
+                           cf.op = CF_OP_MEM_SCRATCH;
+                           cf.elem_size = 3;
+                           cf.gpr = reg;
+                           cf.type = V_SQ_CF_ALLOC_EXPORT_WORD0_SQ_EXPORT_WRITE;
+                           cf.mark = 1;
+                           cf.comp_mask = inst->Dst[0].Register.WriteMask;
+                           cf.swizzle_x = 0;
+                           cf.swizzle_y = 1;
+                           cf.swizzle_z = 2;
+                           cf.swizzle_w = 3;
+                           cf.burst_count = 1;
 
-			get_spilled_array_base_and_size(ctx, tgsi_dst->Register.Index,
-				&cf.array_base, &cf.array_size);
+                           if (tgsi_dst->Register.Indirect) {
+                              if (ctx->bc->chip_class < R700)
+                                 cf.type = V_SQ_CF_ALLOC_EXPORT_WORD0_SQ_EXPORT_WRITE_IND;
+                              else
+                                 cf.type = 3; // V_SQ_CF_ALLOC_EXPORT_WORD0_SQ_EXPORT_WRITE_IND_ACK;
+                              cf.index_gpr = ctx->bc->ar_reg;
+                           }
+                           else {
+                              cf.array_base += idx;
+                              cf.array_size = 0;
+                           }
 
-			if (tgsi_dst->Register.Indirect) {
-				if (ctx->bc->chip_class < R700)
-					cf.type = V_SQ_CF_ALLOC_EXPORT_WORD0_SQ_EXPORT_WRITE_IND;
-				else
-					cf.type = 3; // V_SQ_CF_ALLOC_EXPORT_WORD0_SQ_EXPORT_WRITE_IND_ACK;
-				cf.index_gpr = ctx->bc->ar_reg;
-			}
-			else {
-				cf.array_base += idx;
-				cf.array_size = 0;
-			}
+                           r = r600_bytecode_add_pending_output(ctx->bc, &cf);
+                           if (r)
+                              return;
 
-			r = r600_bytecode_add_pending_output(ctx->bc, &cf);
-			if (r)
-				return;
-
-			if (ctx->bc->chip_class >= R700)
-				r600_bytecode_need_wait_ack(ctx->bc, true);
-
-			return;
+                           if (ctx->bc->chip_class >= R700)
+                              r600_bytecode_need_wait_ack(ctx->bc, true);
+                        }
+                        return;
 		}
 		else {
 			r600_dst->sel = idx;

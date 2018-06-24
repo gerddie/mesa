@@ -43,9 +43,7 @@ int ra_checker::run() {
 
 	dump_all_errors();
 
-	assert(sh.errors.empty());
-
-	return 0;
+	return !sh.errors.empty();
 }
 
 void ra_checker::dump_error(const error_info &e) {
