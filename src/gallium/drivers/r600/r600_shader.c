@@ -3859,7 +3859,7 @@ static int r600_shader_from_tgsi(struct r600_context *rctx,
 			return r;
 	}
 
-        debug_printf("R600: registers reserved  %d\n", ctx.temp_reg);
+        //debug_printf("R600: registers reserved  %d\n", ctx.temp_reg);
 	tgsi_parse_init(&ctx.parse, tokens);
 	while (!tgsi_parse_end_of_tokens(&ctx.parse)) {
 		tgsi_parse_token(&ctx.parse);
@@ -7480,7 +7480,6 @@ static int tgsi_tex(struct r600_shader_ctx *ctx)
 	boolean has_txq_cube_array_z = false;
 	unsigned sampler_index_mode;
 	int *array_index_offset = NULL;
-	int array_index_offset_channel = 2; /* default channel for array offsets */
 
 	if (inst->Instruction.Opcode == TGSI_OPCODE_TXQ &&
 	    ((inst->Texture.Texture == TGSI_TEXTURE_CUBE_ARRAY ||
@@ -8273,11 +8272,21 @@ static int tgsi_tex(struct r600_shader_ctx *ctx)
 		tex.resource_id = tex.sampler_id + R600_MAX_CONST_BUFFERS;
 		tex.resource_index_mode = sampler_index_mode;
 
-		tex.src_gpr = ctx->file_offset[inst->TexOffsets[0].File] + inst->TexOffsets[0].Index;
-		tex.src_sel_x = inst->TexOffsets[0].SwizzleX;
+                tex.src_gpr = ctx->file_offset[inst->TexOffsets[0].File] + inst->TexOffsets[0].Index;
+                tex.src_sel_x = inst->TexOffsets[0].SwizzleX;
 		tex.src_sel_y = inst->TexOffsets[0].SwizzleY;
-		tex.src_sel_z = inst->TexOffsets[0].SwizzleZ;
-		tex.src_sel_w = 4;
+
+                if ((inst->Texture.Texture == TGSI_TEXTURE_2D_ARRAY ||
+                     inst->Texture.Texture == TGSI_TEXTURE_SHADOW2D_ARRAY ||
+                     inst->Texture.Texture == TGSI_TEXTURE_CUBE_ARRAY ||
+                     inst->Texture.Texture == TGSI_TEXTURE_SHADOWCUBE_ARRAY) &&
+                    tex.src_gpr < 124) {
+                   tex.src_sel_z = 5;
+                } else {
+                   tex.src_sel_z = inst->TexOffsets[0].SwizzleZ;
+                }
+
+                tex.src_sel_w = 4;
 
 		tex.dst_sel_x = 7;
 		tex.dst_sel_y = 7;
@@ -8437,8 +8446,7 @@ static int tgsi_tex(struct r600_shader_ctx *ctx)
 			/* the array index is read from Y */
 			tex.coord_type_y = 0;
 		   array_index_offset = &tex.offset_y;
-		   array_index_offset_channel = 1;
-		} else {
+                } else {
 			/* the array index is read from Z */
 			tex.coord_type_z = 0;
 			tex.src_sel_z = tex.src_sel_y;
@@ -8459,57 +8467,11 @@ static int tgsi_tex(struct r600_shader_ctx *ctx)
 	 * Strangely FETCH_OP_GATHER4_*O doesn't seem to be affected
          */
 	if (array_index_offset && opcode != FETCH_OP_LD &&
+            opcode != FETCH_OP_GET_TEXTURE_RESINFO &&
             opcode != FETCH_OP_GATHER4_C_O &&
             opcode != FETCH_OP_GATHER4_O) {
-		/* The z-offset range is not yet exhausted. The offsets are stored as 5-bit S3.1 floating point
-		 * values with a range [0,31) = [-8, 7.5].
-		 */
-		if (*array_index_offset < 31) {
-			*array_index_offset += 1;
-		} else {
-			/* offset registers are ignord or already at the limit, add the offset
-			 * to the lookup coordinate.
-			 */
-			if (!tex.src_rel) {
-				memset(&alu, 0, sizeof(struct r600_bytecode_alu));
-				alu.op =ALU_OP2_ADD;
-				alu.src[0].sel = tex.src_gpr;
-				alu.src[0].chan = array_index_offset_channel;
-				alu.src[1].sel = V_SQ_ALU_SRC_0_5;
-				alu.dst.sel = tex.src_gpr;
-				alu.dst.chan = array_index_offset_channel;
-				alu.dst.write = 1;
-				alu.last = 1;
-				r = r600_bytecode_add_alu(ctx->bc, &alu);
-				if (r)
-					return r;
-			} else {
-				/* We can not read and write to a relative register in the same instruction, so 
-				 * create a temp and move everything over.
-				 */
-				int ofs_tmp = r600_get_temp(ctx);
-				for (int i = 0; i < 4; ++i) {
-					memset(&alu, 0, sizeof(struct r600_bytecode_alu));
-					if (i == array_index_offset_channel) {
-						alu.op =  ALU_OP2_ADD;
-						alu.src[1].sel = V_SQ_ALU_SRC_0_5;
-					} else
-						alu.op =  ALU_OP1_MOV;
-					alu.src[0].sel = tex.src_gpr;
-					alu.src[0].rel = tex.src_rel;
-					alu.src[0].chan = i;
-					alu.dst.sel = ofs_tmp;
-					alu.dst.chan = i;
-					alu.dst.write = 1;
-					alu.last = (i == 3);
-					r = r600_bytecode_add_alu(ctx->bc, &alu);
-					if (r)
-						return r;
-				}
-				tex.src_gpr = ofs_tmp;
-			}
-		}
-	}
+           *array_index_offset += 1;
+        }
 
 	/* mask unused source components */
 	if (opcode == FETCH_OP_SAMPLE || opcode == FETCH_OP_GATHER4) {
