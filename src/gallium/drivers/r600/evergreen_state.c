@@ -2486,24 +2486,13 @@ static void evergreen_emit_sampler_states(struct r600_context *rctx,
 		 */
 		struct r600_pipe_sampler_view	*rview = texinfo->views.views[i];
 		if (rview) {
-                        rstate->tex_sampler_words[0] &= C_03C000_Z_FILTER;
-			enum pipe_texture_target target = rview->base.texture->target;
-			if (target == PIPE_TEXTURE_2D_ARRAY ||
-				target == PIPE_TEXTURE_CUBE_ARRAY ||
-				target == PIPE_TEXTURE_1D_ARRAY) {
-				rstate->tex_sampler_words[0] |= S_03C000_Z_FILTER(V_03C000_SQ_TEX_Z_FILTER_POINT);
-				rstate->tex_sampler_words[2] |= S_03C008_TRUNCATE_COORD(1);
-			} else if (target == PIPE_TEXTURE_3D) {
-				rstate->tex_sampler_words[2] &= C_03C008_TRUNCATE_COORD;
-                        }
-
-                        if (rstate->border_color_use) {
-                           evergreen_convert_border_color(&rstate->border_color,
-                                                          &border_color, rview->base.format);
-                        }
-                } else {
-                   border_color_ptr = &rstate->border_color;
-                }
+			if (rstate->border_color_use) {
+				evergreen_convert_border_color(&rstate->border_color,
+														 &border_color, rview->base.format);
+			}
+		} else {
+			border_color_ptr = &rstate->border_color;
+		}
 
 		radeon_emit(cs, PKT3(PKT3_SET_SAMPLER, 3, 0) | pkt_flags);
 		radeon_emit(cs, (resource_id_base + i) * 3);
