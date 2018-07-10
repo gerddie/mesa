@@ -7721,11 +7721,38 @@ static int tgsi_tex(struct r600_shader_ctx *ctx)
 				if (r)
 					return r;
 
+
+				/* evaluate array index according to floor(z+0.5) */
+				memset(&alu, 0, sizeof(struct r600_bytecode_alu));
+				alu.op = ALU_OP2_ADD;
+				r600_bytecode_src(&alu.src[0], &ctx->src[0], 3);
+				alu.src[1].sel = V_SQ_ALU_SRC_0_5;
+				alu.dst.sel = ctx->temp_reg;
+				alu.dst.chan = 3;
+				alu.dst.write = 1;
+				alu.last = 1;
+				r = r600_bytecode_add_alu(ctx->bc, &alu);
+				if (r)
+					return r;
+
+				memset(&alu, 0, sizeof(struct r600_bytecode_alu));
+				alu.op = ALU_OP1_FLOOR;
+				alu.src[0].sel = ctx->temp_reg;
+				alu.src[0].chan = 3;
+				alu.dst.sel = ctx->temp_reg;
+				alu.dst.chan = 3;
+				alu.dst.write = 1;
+				alu.last = 1;
+				r = r600_bytecode_add_alu(ctx->bc, &alu);
+				if (r)
+					return r;
+
 				/* have to multiply original layer by 8 and add to face id (temp.w) in Z */
 				memset(&alu, 0, sizeof(struct r600_bytecode_alu));
 				alu.op = ALU_OP3_MULADD;
 				alu.is_op3 = 1;
-				r600_bytecode_src(&alu.src[0], &ctx->src[0], 3);
+				alu.src[0].sel = ctx->temp_reg;
+				alu.src[0].chan = 3;
 				alu.src[1].sel = V_SQ_ALU_SRC_LITERAL;
 				alu.src[1].chan = 0;
 				alu.src[1].value = u_bitcast_f2u(8.0f);
