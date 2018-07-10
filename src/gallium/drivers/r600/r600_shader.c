@@ -8453,13 +8453,14 @@ static int tgsi_tex(struct r600_shader_ctx *ctx)
 			array_index_offset = &tex.offset_z;
 		}
 	} else if (inst->Texture.Texture == TGSI_TEXTURE_2D_ARRAY ||
-		   inst->Texture.Texture == TGSI_TEXTURE_SHADOW2D_ARRAY ||
-		   ((inst->Texture.Texture == TGSI_TEXTURE_CUBE_ARRAY ||
-		    inst->Texture.Texture == TGSI_TEXTURE_SHADOWCUBE_ARRAY) &&
-		    (ctx->bc->chip_class >= EVERGREEN))) {
-		/* the array index is read from Z */
+		   inst->Texture.Texture == TGSI_TEXTURE_SHADOW2D_ARRAY)  {
 		tex.coord_type_z = 0;
-	   array_index_offset = &tex.offset_z;
+		array_index_offset = &tex.offset_z;
+	}	else if ((inst->Texture.Texture == TGSI_TEXTURE_CUBE_ARRAY ||
+					 inst->Texture.Texture == TGSI_TEXTURE_SHADOWCUBE_ARRAY) &&
+					(ctx->bc->chip_class >= EVERGREEN)) {
+		/* the array index is read from Z, the array offset was already corrected */
+		tex.coord_type_z = 0;
 	}
 
 	/* We have array access, the coordinates are not int and we use the
