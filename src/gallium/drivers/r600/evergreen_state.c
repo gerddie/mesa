@@ -2477,13 +2477,6 @@ static void evergreen_emit_sampler_states(struct r600_context *rctx,
 		rstate = texinfo->states.states[i];
 		assert(rstate);
 
-		/* For texture arrays the formula select the layer is (floor(z + 0.5))
-		 * The default z-rounding mode doesn't cut it, so we have to override here.
-		 * Set the coordinate interpolation and truncate mode accordingly.
-		 * Adding the 0.5 offset needs to be done in the shader.
-		 * Also  make sure that for 3D textures TRUNCATE_COORD is not set and the 
-		 * z-filter is cleared (which is the default).
-		 */
 		struct r600_pipe_sampler_view	*rview = texinfo->views.views[i];
 		if (rview) {
 			if (rstate->border_color_use) {

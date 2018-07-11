@@ -7451,7 +7451,8 @@ static int r600_do_buffer_txq(struct r600_shader_ctx *ctx, int reg_idx, int offs
 }
 
 static int r600_shader_evaluate_array_index(struct r600_bytecode_alu *alu,
-														  int reg, int chan, struct r600_bytecode *bc)
+														  int reg, int chan,
+														  struct r600_bytecode *bc)
 {
 	int r;
 
@@ -8499,41 +8500,83 @@ static int tgsi_tex(struct r600_shader_ctx *ctx)
 
 	/* We have array access, the coordinates are not int, correctly evaluate the
 	 * array index. For GATHER_O we use the stored offset */
-	if (array_index_offset_channel >= 0 && opcode != FETCH_OP_LD &&
-		 opcode != FETCH_OP_GET_TEXTURE_RESINFO &&
-		 opcode != FETCH_OP_GATHER4_O && opcode != FETCH_OP_GATHER4_C_O) {
+	if (array_index_offset_channel >= 0 &&
+		 opcode != FETCH_OP_LD &&
+		 opcode != FETCH_OP_GET_TEXTURE_RESINFO) {
 
-		if (!tex.src_rel) {
+		if (inst->Instruction.Opcode == TGSI_OPCODE_TG4  &&
+			 (inst->Texture.ReturnType == TGSI_RETURN_TYPE_SINT ||
+			  inst->Texture.ReturnType == TGSI_RETURN_TYPE_UINT)) {
 			memset(&alu, 0, sizeof(struct r600_bytecode_alu));
-			alu.src[0].sel =  tex.src_gpr;
-			alu.src[0].chan =  array_index_offset_channel;
-			alu.src[0].rel = tex.src_rel;
-			r = r600_shader_evaluate_array_index(&alu, tex.src_gpr,
-														 array_index_offset_channel, ctx->bc);
-			if (r)
-				return r;
-		} else {
-			int new_tex_reg = r600_get_temp(ctx);
-			for (i = 0; i < 4; ++i) {
-				memset(&alu, 0, sizeof(struct r600_bytecode_alu));
-				if (i != array_index_offset_channel) {
-					alu.op = ALU_OP1_MOV;
+			if (!tex.src_rel) {
+				alu.op = ALU_OP1_FLOOR;
+				alu.src[0].sel =  tex.src_gpr;
+				alu.src[0].chan =  array_index_offset_channel;
+				alu.src[0].rel = tex.src_rel;
+				alu.dst.sel = tex.src_gpr;
+				alu.dst.chan = array_index_offset_channel;
+				alu.dst.write = 1;
+				r = r600_bytecode_add_alu(ctx->bc, &alu);
+				if (r)
+					return r;
+			} else {
+				int new_tex_reg = r600_get_temp(ctx);
+				for (i = 0; i < 4; ++i) {
+					memset(&alu, 0, sizeof(struct r600_bytecode_alu));
+					alu.op = i != array_index_offset_channel ? ALU_OP1_MOV: ALU_OP1_FLOOR;
 					alu.src[0].sel =  tex.src_gpr;
 					alu.src[0].chan =  i;
 					alu.src[0].rel = tex.src_rel;
 					alu.dst.sel = new_tex_reg;
 					alu.dst.chan = i;
 					alu.dst.write = 1;
+					if (i == 3)
+						alu.last = 1;
 					r = r600_bytecode_add_alu(ctx->bc, &alu);
 					if (r)
 						return r;
 				}
+				tex.src_gpr =  new_tex_reg;
 			}
-			/* This will set the 'last' bit */
-			r = r600_shader_evaluate_array_index(&alu, tex.src_gpr,
-														 array_index_offset_channel, ctx->bc);
-			if (r)
-				return r;
+		} else {
+			if (!tex.src_rel) {
+				memset(&alu, 0, sizeof(struct r600_bytecode_alu));
+				alu.src[0].sel =  tex.src_gpr;
+				alu.src[0].chan =  array_index_offset_channel;
+				r = r600_shader_evaluate_array_index(&alu, tex.src_gpr,
+																 array_index_offset_channel, ctx->bc);
+				if (r)
+					return r;
+			} else {
+				int new_tex_reg = r600_get_temp(ctx);
+				for (i = 0; i < 4; ++i) {
+					memset(&alu, 0, sizeof(struct r600_bytecode_alu));
+					if (i != array_index_offset_channel) {
+						alu.op = ALU_OP1_MOV;
+						alu.src[0].sel =  tex.src_gpr;
+						alu.src[0].chan =  i;
+						alu.src[0].rel = tex.src_rel;
+						alu.dst.sel = new_tex_reg;
+						alu.dst.chan = i;
+						alu.dst.write = 1;
+						r = r600_bytecode_add_alu(ctx->bc, &alu);
+						if (r)
+							return r;
+					}
+				}
+				memset(&alu, 0, sizeof(struct r600_bytecode_alu));
+				alu.src[0].sel = tex.src_gpr;
+				alu.src[0].chan = array_index_offset_channel;
+				alu.src[0].rel = tex.src_rel;
+
+				/* This will set the 'last' bit */
+				r = r600_shader_evaluate_array_index(&alu, new_tex_reg,
+																 array_index_offset_channel,
+																 ctx->bc);
+				if (r)
+					return r;
+				tex.src_gpr =  new_tex_reg;
+			}
 		}
 	}
 
