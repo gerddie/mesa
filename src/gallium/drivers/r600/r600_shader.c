@@ -8516,6 +8516,7 @@ static int tgsi_tex(struct r600_shader_ctx *ctx)
 				alu.dst.sel = tex.src_gpr;
 				alu.dst.chan = array_index_offset_channel;
 				alu.dst.write = 1;
+				alu.last = 1;
 				r = r600_bytecode_add_alu(ctx->bc, &alu);
 				if (r)
 					return r;
