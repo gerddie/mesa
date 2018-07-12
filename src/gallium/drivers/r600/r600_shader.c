@@ -8313,10 +8313,9 @@ static int tgsi_tex(struct r600_shader_ctx *ctx)
 		tex.src_sel_x = inst->TexOffsets[0].SwizzleX;
 		tex.src_sel_y = inst->TexOffsets[0].SwizzleY;
 
-		if ((inst->Texture.Texture == TGSI_TEXTURE_2D_ARRAY ||
-			  inst->Texture.Texture == TGSI_TEXTURE_SHADOW2D_ARRAY) &&
-			 tex.src_gpr < 124) {
-			tex.src_sel_z = 5; /* make sure the offset is zero */
+		if (inst->Texture.Texture == TGSI_TEXTURE_2D_ARRAY ||
+			 inst->Texture.Texture == TGSI_TEXTURE_SHADOW2D_ARRAY)	{
+			tex.src_sel_z = 5; /* add 0.5 to the array index selection */
 		} else {
 			tex.src_sel_z = inst->TexOffsets[0].SwizzleZ;
 		}
@@ -8502,9 +8501,11 @@ static int tgsi_tex(struct r600_shader_ctx *ctx)
 	 * array index. For GATHER_O we use the stored offset */
 	if (array_index_offset_channel >= 0 &&
 		 opcode != FETCH_OP_LD &&
-		 opcode != FETCH_OP_GET_TEXTURE_RESINFO) {
+		 opcode != FETCH_OP_GET_TEXTURE_RESINFO  &&
+		 opcode != FETCH_OP_GATHER4_O &&
+		 opcode != FETCH_OP_GATHER4_C_O) {
 
-		if (inst->Instruction.Opcode == TGSI_OPCODE_TG4  &&
+		if (inst->Instruction.Opcode == TGSI_OPCODE_TG4 &&
 			 (inst->Texture.ReturnType == TGSI_RETURN_TYPE_SINT ||
 			  inst->Texture.ReturnType == TGSI_RETURN_TYPE_UINT)) {
 			memset(&alu, 0, sizeof(struct r600_bytecode_alu));
