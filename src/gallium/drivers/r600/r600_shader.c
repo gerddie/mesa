@@ -7448,6 +7448,40 @@ static int r600_do_buffer_txq(struct r600_shader_ctx *ctx, int reg_idx, int offs
 	}
 }
 
+/* Evaluate the texture array index according to floor(z+0.5) */
+static int r600_shader_evaluate_array_index(struct r600_bytecode_alu *alu,
+														  int reg, int chan, int rel,
+														  struct r600_bytecode *bc)
+{
+	int r;
+
+	/* evaluate array index according to floor(z+0.5) */
+	alu->op = ALU_OP2_ADD;
+	alu->src[1].sel = V_SQ_ALU_SRC_0_5;
+	alu->dst.sel = reg;
+	alu->dst.chan = chan;
+	alu->dst.rel = rel;
+	alu->dst.write = 1;
+	alu->last = 1;
+	r = r600_bytecode_add_alu(bc, alu);
+	if (r)
+		return r;
+
+	memset(alu, 0, sizeof(struct r600_bytecode_alu));
+	alu->op = ALU_OP1_FLOOR;
+	alu->src[0].sel = reg;
+	alu->src[0].chan = chan;
+	alu->src[0].rel = rel;
+	alu->dst.sel = reg;
+	alu->dst.chan = chan;
+	alu->dst.rel = rel;
+	alu->dst.write = 1;
+	alu->last = 1;
+	r = r600_bytecode_add_alu(bc, alu);
+	if (r)
+		return r;
+	return 0;
+}
 
 static int tgsi_tex(struct r600_shader_ctx *ctx)
 {
