@@ -7754,11 +7754,40 @@ static int tgsi_tex(struct r600_shader_ctx *ctx)
 				if (r)
 					return r;
 
+				/* Evaluate the array index according to floor(idx + 0.5). This
+			    * needs to be done before merging the face select value, because
+				 * otherwise the fractional part of the array inxed will interfere
+				 * with the face select value */
+				memset(&alu, 0, sizeof(struct r600_bytecode_alu));
+				r600_bytecode_src(&alu.src[0], &ctx->src[0], 3);
+				r = r600_shader_evaluate_array_index(&alu, ctx->temp_reg, 3, 0, ctx->bc);
+				if (r)
+					return r;
+
+				/* We have to make sure the index is >= 0, otherwise the face
+				* selection will fail */
+				memset(&alu, 0, sizeof(struct r600_bytecode_alu));
+				alu.op = ALU_OP3_CNDGE;
+				alu.is_op3 = 1;
+				alu.src[0].sel = ctx->temp_reg;
+				alu.src[0].chan = 3;
+				alu.src[1].sel = ctx->temp_reg;
+				alu.src[1].chan = 3;
+				alu.src[2].sel = V_SQ_ALU_SRC_0;
+				alu.dst.sel = ctx->temp_reg;
+				alu.dst.chan = 3;
+				alu.dst.write = 1;
+				alu.last = 1;
+				r = r600_bytecode_add_alu(ctx->bc, &alu);
+				if (r)
+					return r;
+
 				/* have to multiply original layer by 8 and add to face id (temp.w) in Z */
 				memset(&alu, 0, sizeof(struct r600_bytecode_alu));
 				alu.op = ALU_OP3_MULADD;
 				alu.is_op3 = 1;
-				r600_bytecode_src(&alu.src[0], &ctx->src[0], 3);
+				alu.src[0].sel = ctx->temp_reg;
+				alu.src[0].chan = 3;
 				alu.src[1].sel = V_SQ_ALU_SRC_LITERAL;
 				alu.src[1].chan = 0;
 				alu.src[1].value = u_bitcast_f2u(8.0f);
