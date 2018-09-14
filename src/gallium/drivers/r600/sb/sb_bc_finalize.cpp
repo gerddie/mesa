@@ -996,12 +996,18 @@ void bc_finalizer::cf_peephole() {
 					c->remove();
 				}
 			}
-		} else if (c->is_cf_op(CF_OP_JUMP) && c->jump_target == c->next) {
+		} else if (c->is_cf_op(CF_OP_JUMP) && c->jump_target == c->next &&
+					  !c->jump_target->is_cf_op(CF_OP_ELSE)) {
 			// if JUMP is immediately followed by its jump target,
 			// then JUMP is useless and we can eliminate it
+			// unless it is an ELSE, then something went wrong
 			c->remove();
 		}
 	}
+
+
+
+
 }
 
 } // namespace r600_sb
