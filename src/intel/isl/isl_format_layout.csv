@@ -220,6 +220,7 @@ L8_UINT                     ,   8,  1,  1,  1,     ,     ,     ,     ,  ui8,    
 L8_SINT                     ,   8,  1,  1,  1,     ,     ,     ,     ,  si8,     ,    ,     l, linear,
 I8_UINT                     ,   8,  1,  1,  1,     ,     ,     ,     ,     ,  ui8,    ,     i, linear,
 I8_SINT                     ,   8,  1,  1,  1,     ,     ,     ,     ,     ,  si8,    ,     i, linear,
+R8_UNORM_SRGB               ,   8,  1,  1,  1,  un8,     ,     ,     ,     ,     ,    ,     r,   srgb,
 DXT1_RGB_SRGB               ,  64,  4,  4,  1,  un4,  un4,  un4,     ,     ,     ,    ,      ,   srgb,  dxt1
 R1_UNORM                    ,   1,  1,  1,  1,  un1,     ,     ,     ,     ,     ,    ,     r, linear,
 YCRCB_NORMAL                ,  16,  1,  1,  1,  un8,  un8,  un8,     ,     ,     ,    ,      ,    yuv,

@@ -456,7 +456,7 @@ mesa_format radeonChooseTextureFormat(struct gl_context * ctx,
 	case GL_COMPRESSED_SRGB_ALPHA:
 		return MESA_FORMAT_B8G8R8A8_SRGB;
 
-        case GL_SLUMINANCE:
+	case GL_SLUMINANCE:
 	case GL_SLUMINANCE8:
 	case GL_COMPRESSED_SLUMINANCE:
 		return MESA_FORMAT_L_SRGB8;

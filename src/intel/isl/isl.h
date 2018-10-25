@@ -259,6 +259,7 @@ enum isl_format {
    ISL_FORMAT_L8_SINT =                                        339,
    ISL_FORMAT_I8_UINT =                                        340,
    ISL_FORMAT_I8_SINT =                                        341,
+   ISL_FORMAT_R8_UNORM_SRGB =                                  342,
    ISL_FORMAT_DXT1_RGB_SRGB =                                  384,
    ISL_FORMAT_R1_UNORM =                                       385,
    ISL_FORMAT_YCRCB_NORMAL =                                   386,

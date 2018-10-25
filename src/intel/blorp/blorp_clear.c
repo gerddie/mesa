@@ -406,7 +406,8 @@ blorp_clear(struct blorp_batch *batch,
    if (format == ISL_FORMAT_R9G9B9E5_SHAREDEXP) {
       clear_color.u32[0] = float3_to_rgb9e5(clear_color.f32);
       format = ISL_FORMAT_R32_UINT;
-   } else if (format == ISL_FORMAT_L8_UNORM_SRGB) {
+   } else if (format == ISL_FORMAT_L8_UNORM_SRGB ||
+              format == ISL_FORMAT_R8_UNORM_SRGB) {
       clear_color.f32[0] = util_format_linear_to_srgb_float(clear_color.f32[0]);
       format = ISL_FORMAT_R8_UNORM;
    } else if (format == ISL_FORMAT_A4B4G4R4_UNORM) {

@@ -1003,7 +1003,8 @@ convert_color(struct nir_builder *b, nir_ssa_def *color,
       unsigned factor = (1 << 24) - 1;
       value = nir_fsat(b, nir_channel(b, color, 0));
       value = nir_f2i32(b, nir_fmul(b, value, nir_imm_float(b, factor)));
-   } else if (key->dst_format == ISL_FORMAT_L8_UNORM_SRGB) {
+   } else if (key->dst_format == ISL_FORMAT_L8_UNORM_SRGB ||
+              key->dst_format == ISL_FORMAT_R8_UNORM_SRGB) {
       value = nir_format_linear_to_srgb(b, nir_channel(b, color, 0));
    } else if (key->dst_format == ISL_FORMAT_R8G8B8_UNORM_SRGB) {
       value = nir_format_linear_to_srgb(b, color);
@@ -1993,7 +1994,8 @@ try_blorp_blit(struct blorp_batch *batch,
          isl_swizzle_compose(params->dst.view.swizzle,
                              ISL_SWIZZLE(ALPHA, RED, GREEN, BLUE));
       params->dst.view.format = ISL_FORMAT_B4G4R4A4_UNORM;
-   } else if (params->dst.view.format == ISL_FORMAT_L8_UNORM_SRGB) {
+   } else if (params->dst.view.format == ISL_FORMAT_L8_UNORM_SRGB ||
+              params->dst.view.format == ISL_FORMAT_R8_UNORM_SRGB) {
       wm_prog_key->dst_format = params->dst.view.format;
       params->dst.view.format = ISL_FORMAT_R8_UNORM;
    } else if (params->dst.view.format == ISL_FORMAT_R9G9B9E5_SHAREDEXP) {
