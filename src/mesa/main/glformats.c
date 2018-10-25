@@ -31,6 +31,10 @@
 #include "texcompress.h"
 #include "enums.h"
 
+/* For GL_SR8_EXT */
+#include <GLES2/gl2.h>
+#include <GLES2/gl2ext.h>
+
 enum {
    ZERO = 4,
    ONE = 5
@@ -2486,6 +2490,15 @@ _mesa_base_tex_format(const struct gl_context *ctx, GLint internalFormat)
       }
    }
 
+   if (ctx->Extensions.EXT_texture_sRGB_R8) {
+      switch (internalFormat) {
+      case GL_SR8_EXT:
+         return GL_RED;
+      default:
+         ; /* fallthrough */
+      }
+   }
+
    if (ctx->Version >= 30 ||
        ctx->Extensions.EXT_texture_integer) {
       switch (internalFormat) {
@@ -3200,11 +3213,11 @@ _mesa_es3_error_check_format_and_type(const struct gl_context *ctx,
       break;
 
    case GL_RED:
-      if (!ctx->Extensions.ARB_texture_rg)
+      if (!ctx->Extensions.ARB_texture_rg || !ctx->Extensions.EXT_texture_sRGB_R8)
          return GL_INVALID_OPERATION;
       switch (type) {
       case GL_UNSIGNED_BYTE:
-         if (internalFormat != GL_R8)
+         if (internalFormat != GL_R8 && internalFormat != GL_SR8_EXT)
             return GL_INVALID_OPERATION;
          break;
 
