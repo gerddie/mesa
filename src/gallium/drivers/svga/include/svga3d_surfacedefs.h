@@ -900,6 +900,11 @@ static const struct svga3d_surface_desc svga3d_surface_descs[] = {
       {4, 4, 1},  16, 16,
       128, {{0}, {0}, {128}, {0}},
       {{0}, {0}, {0}, {0}}},
+   {SVGA3D_R8_UNORM_SRGB, SVGA3DBLOCKDESC_RED,
+      {1, 1, 1},  1, 1,
+      8, {{0}, {0}, {8}, {0}},
+      {{0}, {0}, {0}, {0}}},
+
 };
 
 

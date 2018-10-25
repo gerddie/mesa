@@ -437,6 +437,7 @@ typedef enum {
 
    SVGA3D_DEVCAP_MULTISAMPLE_2X                    = 245,
    SVGA3D_DEVCAP_MULTISAMPLE_4X                    = 246,
+   SVGA3D_DEVCAP_DXFMT_R8_UNORM_SRGB               = 247,
 
    SVGA3D_DEVCAP_MAX                       /* This must be the last index. */
 } SVGA3dDevCapIndex;

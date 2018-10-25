@@ -339,7 +339,7 @@ typedef enum SVGA3dSurfaceFormat {
    SVGA3D_B8G8R8X8_UNORM               = 142,
    SVGA3D_BC4_UNORM                    = 143,
    SVGA3D_BC5_UNORM                    = 144,
-
+   SVGA3D_R8_UNORM_SRGB                = 145,
    SVGA3D_FORMAT_MAX
 } SVGA3dSurfaceFormat;
 

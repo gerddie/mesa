@@ -370,6 +370,7 @@ static const struct vgpu10_format_entry format_conversion_table[] =
    { PIPE_FORMAT_A1B5G5R5_UNORM,        SVGA3D_FORMAT_INVALID,      SVGA3D_FORMAT_INVALID,       SVGA3D_FORMAT_INVALID,       0 },
    { PIPE_FORMAT_X1B5G5R5_UNORM,        SVGA3D_FORMAT_INVALID,      SVGA3D_FORMAT_INVALID,       SVGA3D_FORMAT_INVALID,       0 },
    { PIPE_FORMAT_A4B4G4R4_UNORM,        SVGA3D_FORMAT_INVALID,      SVGA3D_FORMAT_INVALID,       SVGA3D_FORMAT_INVALID,       0 },
+   { PIPE_FORMAT_R8_SRGB,               SVGA3D_FORMAT_INVALID,      SVGA3D_FORMAT_INVALID,       SVGA3D_FORMAT_INVALID,       0 },
 };
 
 
@@ -1520,6 +1521,12 @@ static const struct format_cap format_cap_table[] = {
      SVGA3D_BC5_UNORM,
      SVGA3D_DEVCAP_DXFMT_BC5_UNORM,
      4, 4, 16, 0
+   },
+   {
+       "SVGA3D_R8_UNORM_SRGB",
+       SVGA3D_R8_UNORM_SRGB,
+       SVGA3D_DEVCAP_DXFMT_R8_UNORM_SRGB,
+       1, 1, 1, 0
    }
 };
 
