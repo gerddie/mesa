@@ -1059,6 +1059,7 @@ static uint32_t
 dri3_cpp_for_format(uint32_t format) {
    switch (format) {
    case  __DRI_IMAGE_FORMAT_R8:
+   case  __DRI_IMAGE_FORMAT_SR8:
       return 1;
    case  __DRI_IMAGE_FORMAT_RGB565:
    case  __DRI_IMAGE_FORMAT_GR88:
@@ -1121,6 +1122,7 @@ image_format_to_fourcc(int format)
 
    /* Convert from __DRI_IMAGE_FORMAT to __DRI_IMAGE_FOURCC (sigh) */
    switch (format) {
+   case __DRI_IMAGE_FORMAT_SR8: return __DRI_IMAGE_FOURCC_SR8;
    case __DRI_IMAGE_FORMAT_SARGB8: return __DRI_IMAGE_FOURCC_SARGB8888;
    case __DRI_IMAGE_FORMAT_SABGR8: return __DRI_IMAGE_FOURCC_SABGR8888;
    case __DRI_IMAGE_FORMAT_RGB565: return __DRI_IMAGE_FOURCC_RGB565;

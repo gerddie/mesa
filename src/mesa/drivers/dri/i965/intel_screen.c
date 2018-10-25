@@ -219,6 +219,9 @@ static const struct intel_image_format intel_image_formats[] = {
    { __DRI_IMAGE_FOURCC_R8, __DRI_IMAGE_COMPONENTS_R, 1,
      { { 0, 0, 0, __DRI_IMAGE_FORMAT_R8, 1 }, } },
 
+   { __DRI_IMAGE_FOURCC_SR8, __DRI_IMAGE_COMPONENTS_R, 1,
+       { { 0, 0, 0, __DRI_IMAGE_FORMAT_SR8, 1 }, } },
+
    { __DRI_IMAGE_FOURCC_R16, __DRI_IMAGE_COMPONENTS_R, 1,
      { { 0, 0, 0, __DRI_IMAGE_FORMAT_R16, 1 }, } },
 
@@ -1307,7 +1310,8 @@ intel_query_dma_buf_formats(__DRIscreen *_screen, int max,
        * advertise them through the EGL layer.
        */
       if (intel_image_formats[i].fourcc == __DRI_IMAGE_FOURCC_SARGB8888 ||
-          intel_image_formats[i].fourcc == __DRI_IMAGE_FOURCC_SABGR8888)
+          intel_image_formats[i].fourcc == __DRI_IMAGE_FOURCC_SABGR8888 ||
+          intel_image_formats[i].fourcc == __DRI_IMAGE_FOURCC_SR8)
          continue;
 
       if (!intel_image_format_is_supported(&screen->devinfo,

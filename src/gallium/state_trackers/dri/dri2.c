@@ -79,6 +79,7 @@ static const int fourcc_formats[] = {
    __DRI_IMAGE_FOURCC_ARGB1555,
    __DRI_IMAGE_FOURCC_RGB565,
    __DRI_IMAGE_FOURCC_R8,
+   __DRI_IMAGE_FOURCC_SR8,
    __DRI_IMAGE_FOURCC_R16,
    __DRI_IMAGE_FOURCC_GR88,
    __DRI_IMAGE_FOURCC_GR1616,
@@ -298,6 +299,9 @@ static enum pipe_format fourcc_to_pipe_format(int fourcc)
    switch (fourcc) {
    case __DRI_IMAGE_FOURCC_R8:
       pf = PIPE_FORMAT_R8_UNORM;
+      break;
+   case __DRI_IMAGE_FOURCC_SR8:
+      pf = PIPE_FORMAT_R8_SRGB;
       break;
    case __DRI_IMAGE_FOURCC_GR88:
       pf = PIPE_FORMAT_RG88_UNORM;
@@ -1513,7 +1517,9 @@ dri2_query_dma_buf_formats(__DRIscreen *_screen, int max, int *formats,
       /* The sRGB format is not a real FourCC as defined by drm_fourcc.h, so we
        * must not leak it out to clients.
        */
-      if (fourcc_formats[i] == __DRI_IMAGE_FOURCC_SARGB8888)
+      if (fourcc_formats[i] == __DRI_IMAGE_FOURCC_SARGB8888 ||
+          fourcc_formats[i] == __DRI_IMAGE_FOURCC_SABGR8888 ||
+          fourcc_formats[i] == __DRI_IMAGE_FOURCC_SR8)
          continue;
 
       if (pscreen->is_format_supported(pscreen,
